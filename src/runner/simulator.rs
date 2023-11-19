@@ -77,7 +77,7 @@ impl SimulatorRunner {
             "launch",
             "--terminate-running-process",
             "--console-pty",
-            "E8D24A66-E7F9-4DF3-9845-0E1F586754A1",
+            &self.device.udid,
             &self.app_id,
         ];
 

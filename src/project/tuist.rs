@@ -61,7 +61,7 @@ impl ProjectCompile for TuistProject {
 
         let name = self.name();
         let root = self.root();
-        let cache_root = self.build_cache_root()?;tui
+        let cache_root = self.build_cache_root()?;
         let args = self.compile_arguments();
         let mut tasks_recvs = vec![];
         let mut xccommands: Vec<Arc<Mutex<Vec<C>>>> = vec![];
@@ -132,10 +132,6 @@ impl ProjectCompile for TuistProject {
         if xccommands.is_empty() {
             broadcast.warn("No compile command was generated!");
         }
-
-
-
-        tracing::info!("GOT HEREREEE");
 
         let json = serde_json::to_vec_pretty(&xccommands)?;
         tokio::fs::write(root.join(".compile"), &json).await?;

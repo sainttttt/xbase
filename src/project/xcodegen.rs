@@ -73,8 +73,6 @@ impl ProjectCompile for XCodeGenProject {
                 broadcast.warn("No compile command was generated!");
             }
             let json = serde_json::to_vec_pretty(&compile_db)?;
-
-            tracing::info!("got here 2222");
             tokio::fs::write(root.join(".compile"), &json).await?;
             broadcast.reload_lsp_server();
             Ok(())
