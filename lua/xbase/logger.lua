@@ -1,11 +1,28 @@
 local util = require "xbase.util"
 local M = { bufnr = nil }
 
+
+local function closefloat()
+  local bufnr = M.bufnr
+  local win = vim.fn.win_findbuf(bufnr)[1]
+
+  -- if win and force then
+  if win then
+    vim.api.nvim_win_close(win, false)
+  end
+end
+
 function M.setup()
   if M.bufnr then
     return
   end
   M.bufnr = vim.api.nvim_create_buf(false, true)
+
+  vim.api.nvim_create_autocmd("WinLeave", {
+    buffer = M.bufnr,
+    callback = closefloat
+  })
+
   local cfg = require("xbase.config").values
 
   vim.api.nvim_buf_set_name(M.bufnr, "[XBase Logs]")
@@ -23,44 +40,75 @@ function M.setup()
   return M.bufnr
 end
 
-function M.toggle(vsplit, force)
+function M._get_float_config()
+
+  local width = math.ceil(math.min(vim.o.columns, math.max(80, vim.o.columns - 20)))
+  local height = math.ceil(math.min(vim.o.lines, math.max(20, vim.o.lines - 10)))
+
+  local row = math.ceil(vim.o.lines - height) * 0.5 - 1
+  local col = math.ceil(vim.o.columns - width) * 0.5 - 1
+
+  return {
+    row = row,
+    col = col,
+    relative = "editor",
+    style = "minimal",
+    width = width,
+    height = height,
+    border = "double",
+    zindex = nil,
+  }
+end
+
+
+function M.open()
+  local bufnr = M.bufnr
+  local win = vim.fn.win_findbuf(bufnr)[1]
+
+  local float_cfg = M._get_float_config()
+  if not win then
+    vim.api.nvim_open_win(M.bufnr, true, float_cfg)
+    vim.fn.feedkeys "G"
+  end
+end
+
+function M.toggle(direction, force)
   local cfg = require("xbase.config").values
   local curr_win = vim.api.nvim_get_current_win()
 
   local bufnr = M.bufnr
   local win = vim.fn.win_findbuf(bufnr)[1]
 
-  if win and force then
+  -- if win and force then
+  if win then
     vim.api.nvim_win_close(win, false)
+    return
   end
+
   if win and not force then
     return
   end
 
-  if vsplit == nil then
-    local default = cfg.log_buffer.default_direction
-    if default == "horizontal" then
-      vsplit = false
-    else
-      vsplit = true
-    end
-  end
+  direction = direction or cfg.log_buffer.default_direction
 
-  local cmd = vsplit and "vert sbuffer" or "sbuffer"
-  local open = string.format("%s %s", cmd, bufnr)
-
-  vim.cmd(open)
-
-  if vsplit == false then
-    vim.api.nvim_win_set_height(0, cfg.log_buffer.height)
+  if direction == "float" then
+    local float_cfg = M._get_float_config()
+    vim.api.nvim_open_win(M.bufnr, true, float_cfg)
   else
-    vim.api.nvim_win_set_width(0, cfg.log_buffer.width)
+    local cmd = vsplit and "vert sbuffer" or "sbuffer"
+    local open = string.format("%s %s", cmd, bufnr)
   end
+
+  -- if vsplit == false then
+  --   vim.api.nvim_win_set_height(0, cfg.log_buffer.height)
+  -- else
+  --   vim.api.nvim_win_set_width(0, cfg.log_buffer.width)
+  -- end
   vim.fn.feedkeys "G"
 
-  if not cfg.log_buffer.focus and curr_win ~= win then
-    vim.api.nvim_set_current_win(curr_win)
-  end
+  -- if not cfg.log_buffer.focus and curr_win ~= win then
+  --   vim.api.nvim_set_current_win(curr_win)
+  -- end
 end
 
 ---Checks whether the level is sufficient for logging.
@@ -74,6 +122,12 @@ function M.should_log(level)
   end
   -- return true
   return level >= require("xbase.config").values.log_level
+end
+
+
+function M.clear()
+  local line_count = vim.api.nvim_buf_line_count(M.bufnr)
+    vim.api.nvim_buf_set_lines(M.bufnr, 0, line_count, false, {""})
 end
 
 function M.log(msg, level)

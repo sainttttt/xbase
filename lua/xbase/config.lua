@@ -45,7 +45,7 @@ local defaults = {
     --- Vsplit Log buffer width
     width = 75,
     --- Default log buffer direction: { "horizontal", "vertical" }
-    default_direction = "horizontal",
+    default_direction = "float",
   },
   --- Mappings
   mappings = {
